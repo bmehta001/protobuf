@@ -95,19 +95,24 @@ func Equal(a, b Message) bool {
 // v1 and v2 are known to have the same type.
 func equalStruct(v1, v2 reflect.Value) bool {
 	sprop := GetProperties(v1.Type())
-	for i := 0; i < v1.NumField(); i++ {
-		f := v1.Type().Field(i)
-		if strings.HasPrefix(f.Name, "XXX_") {
+	for i := 0; i < v1.NumMethod(); i++ {
+		m := v1.Type().Method(i)
+		if !strings.HasPrefix(m.Name, "Get") {
 			continue
 		}
-		f1, f2 := v1.Field(i), v2.Field(i)
+		m1, m2 := v1.Method(i), v2.Method(i)
+		f := m()
+		f1 := m1()
+		f2 := m2()
 		if f.Type.Kind() == reflect.Ptr {
 			if n1, n2 := f1.IsNil(), f2.IsNil(); n1 && n2 {
 				// both unset
 				continue
-			} else if n1 != n2 {
+			} else {
 				// set/unset mismatch
-				return false
+				if !equalStruct(v1, v2) {
+				  return false
+				}
 			}
 			f1, f2 = f1.Elem(), f2.Elem()
 		}
